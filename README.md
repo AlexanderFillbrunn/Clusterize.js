@@ -10,14 +10,14 @@ This fork adds support for a function supplying html code for new rows.
 
 **Usage:**
 ```javascript
-    // JavaScript
-    var clusterize = new Clusterize({
-      rows: function(i) {
+// JavaScript
+var clusterize = new Clusterize({
+    rows: function(i) {
         return '<tr>' + Math.sqrt(i) + '</tr>'
-      },
-      // You need to specify the size because clusterize cannot determine it from the function
-      size : 500000,
-      scrollId: 'scrollArea',
+    },
+    // You need to specify the size because clusterize cannot determine it from the function
+    size : 500000,
+    scrollId: 'scrollArea',
     contentId: 'contentArea'
 });
 ```
