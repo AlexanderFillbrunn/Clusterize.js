@@ -11,7 +11,6 @@ This fork adds support for a function supplying html code for new rows.
 **Usage:**
 ```javascript
     // JavaScript
-    var data = ['<tr>…</tr>', '<tr>…</tr>', …];
     var clusterize = new Clusterize({
       rows: function(i) {
         return '<tr>' + Math.sqrt(i) + '</tr>'
