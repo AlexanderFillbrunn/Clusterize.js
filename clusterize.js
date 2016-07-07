@@ -3,7 +3,7 @@
 * Copyright (c) 2015 Denis Lukov; Licensed GPLv3 */
 
 ;(function(name, definition) {
-    if (typeof module != 'undefined') module.exports = definition();
+  if (typeof module != 'undefined') module.exports = definition();
     else if (typeof define == 'function' && typeof define.amd == 'object') define(definition);
     else this[name] = definition();
 }('Clusterize', function() {
@@ -43,6 +43,23 @@
       scroll_top: 0
     }
 
+    function proxy(input, size) {
+      if (typeof input === 'function') {
+        return {
+          get : input,
+          length : function() { return size; },
+          type : "fn"
+        }
+      } else {
+        return {
+          get : function(i) { return input[i]; },
+          length : function() { return input.length; },
+          data : function() { return input; },
+          type : "array"
+        }
+      }
+    }
+
     // public parameters
     self.options = {};
     var options = ['rows_in_block', 'blocks_in_cluster', 'show_no_data_row', 'no_data_class', 'no_data_text', 'keep_parity', 'tag', 'callbacks'];
@@ -65,11 +82,24 @@
     if( ! self.content_elem.hasAttribute('tabindex'))
       self.content_elem.setAttribute('tabindex', 0);
 
+      /*
     // private parameters
     var rows = isArray(data.rows)
-        ? data.rows
-        : self.fetchMarkup(),
+        ? proxy(data.rows)
+        : proxy(self.fetchMarkup()),
       cache = {data: '', bottom: 0},
+      scroll_top = self.scroll_elem.scrollTop;
+      */
+
+      var rows;
+      if (isArray(data.rows)) {
+        rows = proxy(data.rows)
+      } else if (typeof data.rows === 'function') {
+        rows = proxy(data.rows, data.size)
+      } else {
+        rows = proxy(self.fetchMarkup())
+      }
+      var cache = {data: '', bottom: 0},
       scroll_top = self.scroll_elem.scrollTop;
 
     // get row height
@@ -120,11 +150,11 @@
     }
     self.update = function(new_rows) {
       rows = isArray(new_rows)
-        ? new_rows
-        : [];
+        ? proxy(new_rows)
+        : proxy([]);
       var scroll_top = self.scroll_elem.scrollTop;
       // fixes #39
-      if(rows.length * self.options.item_height < scroll_top) {
+      if(rows.length() * self.options.item_height < scroll_top) {
         self.scroll_elem.scrollTop = 0;
         last_cluster = 0;
       }
@@ -135,20 +165,23 @@
       self.update([]);
     }
     self.getRowsAmount = function() {
-      return rows.length;
+      return rows.length();
     }
     self.getScrollProgress = function() {
-      return this.options.scroll_top / (rows.length * this.options.item_height) * 100 || 0;
+      return this.options.scroll_top / (rows.length() * this.options.item_height) * 100 || 0;
     }
 
     var add = function(where, _new_rows) {
+      if (rows.type == "fn") {
+        throw new Error("Error: Cannot add elements when source is a function");
+      }
       var new_rows = isArray(_new_rows)
         ? _new_rows
         : [];
       if( ! new_rows.length) return;
-      rows = where == 'append'
-        ? rows.concat(new_rows)
-        : new_rows.concat(rows);
+      rows = proxy(where == 'append'
+        ? rows.data().concat(new_rows)
+        : new_rows.concat(rows));
       self.insertToDOM(rows, cache);
     }
     self.append = function(rows) {
@@ -173,9 +206,10 @@
     exploreEnvironment: function(rows) {
       var opts = this.options;
       opts.content_tag = this.content_elem.tagName.toLowerCase();
-      if( ! rows.length) return;
-      if(ie && ie <= 9 && ! opts.tag) opts.tag = rows[0].match(/<([^>\s/]*)/)[1].toLowerCase();
-      if(this.content_elem.children.length <= 1) this.html(rows[0] + rows[0] + rows[0]);
+      if( ! rows.length()) return;
+      var rows0 = rows.get(0);
+      if(ie && ie <= 9 && ! opts.tag) opts.tag = rows0.match(/<([^>\s/]*)/)[1].toLowerCase();
+      if(this.content_elem.children.length <= 1) this.html(rows0 + rows0 + rows0);
       if( ! opts.tag) opts.tag = this.content_elem.children[0].tagName.toLowerCase();
       this.getRowsHeight(rows);
     },
@@ -183,7 +217,7 @@
       var opts = this.options,
         prev_item_height = opts.item_height;
       opts.cluster_height = 0
-      if( ! rows.length) return;
+      if( ! rows.length()) return;
       var nodes = this.content_elem.children;
       opts.item_height = nodes[Math.floor(nodes.length / 2)].offsetHeight;
       // consider table's border-spacing
@@ -216,7 +250,7 @@
     // generate cluster for current scroll position
     generate: function (rows, cluster_num) {
       var opts = this.options,
-        rows_len = rows.length;
+        rows_len = rows.length();
       if (rows_len < opts.rows_in_block) {
         return {
           top_offset: 0,
@@ -238,7 +272,7 @@
         rows_above++;
       }
       for (var i = items_start; i < items_end; i++) {
-        rows[i] && this_cluster_rows.push(rows[i]);
+        rows.get(i) && this_cluster_rows.push(rows.get(i));
       }
       return {
         top_offset: top_offset,
