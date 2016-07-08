@@ -252,12 +252,23 @@
       var opts = this.options,
         rows_len = rows.length();
       if (rows_len < opts.rows_in_block) {
-        return {
-          top_offset: 0,
-          bottom_offset: 0,
-          rows_above: 0,
-          rows: rows_len ? rows : this.generateEmptyRow()
-        }
+    	  var rowArr;
+	      if (!rows_len) {
+	      	rowArr = this.generateEmptyRow()
+	      } else if (rows.type === "fn") {
+	      	rowArr = []
+	      	for (var i = 0; i < rows.length(); i++) {
+	      		rowArr.push(rows.get(i))
+	      	}
+	      } else {
+	      	rowArr = rows.data
+	      }
+          return {
+            top_offset: 0,
+            bottom_offset: 0,
+            rows_above: 0,
+            rows: rowArr
+          }
       }
       if( ! opts.cluster_height) {
         this.exploreEnvironment(rows);
