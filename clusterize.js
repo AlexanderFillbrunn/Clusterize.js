@@ -3,9 +3,7 @@
 * Copyright (c) 2015 Denis Lukov; Licensed GPLv3 */
 
 ;(function(name, definition) {
-  if (typeof module != 'undefined') module.exports = definition();
-    else if (typeof define == 'function' && typeof define.amd == 'object') define(definition);
-    else this[name] = definition();
+	this[name] = definition();
 }('Clusterize', function() {
   "use strict"
 
@@ -90,15 +88,19 @@
       cache = {data: '', bottom: 0},
       scroll_top = self.scroll_elem.scrollTop;
       */
-
-      var rows;
-      if (isArray(data.rows)) {
-        rows = proxy(data.rows)
-      } else if (typeof data.rows === 'function') {
-        rows = proxy(data.rows, data.size)
-      } else {
-        rows = proxy(self.fetchMarkup())
+      
+      function toProxy(d, size) {
+    	  if (isArray(d)) {
+	        return proxy(d)
+	      } else if (typeof d === 'function') {
+	        return proxy(d, size)
+	      } else {
+	        return proxy(self.fetchMarkup())
+	      }
       }
+      
+      var rows = toProxy(data.rows, data.size);
+      
       var cache = {data: '', bottom: 0},
       scroll_top = self.scroll_elem.scrollTop;
 
@@ -143,15 +145,16 @@
     self.destroy = function(clean) {
       off('scroll', self.scroll_elem, scrollEv);
       off('resize', window, resizeEv);
-      self.html((clean ? self.generateEmptyRow() : rows).join(''));
+      if (!(rows.type === "fn" && clean)) {
+    	  self.html((clean ? self.generateEmptyRow() : rows).join(''));
+      }
     }
     self.refresh = function() {
       self.getRowsHeight(rows) && self.update(rows);
     }
-    self.update = function(new_rows) {
-      rows = isArray(new_rows)
-        ? proxy(new_rows)
-        : proxy([]);
+    self.update = function(new_rows, new_size) {
+      rows = toProxy(new_rows, new_size);
+      
       var scroll_top = self.scroll_elem.scrollTop;
       // fixes #39
       if(rows.length() * self.options.item_height < scroll_top) {
