@@ -19,6 +19,6 @@ You can also still just pass an array instead of the function and the size
 
 ---
 
-[Demo, usage, etc…](https://clusterize.js.org/)
+[Demo, usage, etc… (of the original library)](https://clusterize.js.org/)
 
 [![example](http://nexts.github.io/Clusterize.js/img/table_example.gif)](https://clusterize.js.org/)
